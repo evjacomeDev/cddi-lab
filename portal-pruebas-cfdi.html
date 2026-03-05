@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CFDILab — Portal de Pruebas</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#f4f3ef; --panel:#fff; --ink:#111; --ink2:#444; --muted:#999;
+  --border:#ddd; --border2:#e8e6e0;
+  --pass:#15803d; --pass-bg:#f0fdf4; --pass-bdr:#86efac;
+  --fail:#b91c1c; --fail-bg:#fef2f2; --fail-bdr:#fca5a5;
+  --warn:#b45309; --warn-bg:#fffbeb; --warn-bdr:#fcd34d;
+  --blue:#1d4ed8; --blue-bg:#eff6ff;
+  --accent:#d97706;
+  --mono:'Geist Mono',monospace; --serif:'Instrument Serif',serif;
+}
+html{font-size:13px;}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);
+  display:grid;grid-template-columns:272px 1fr;grid-template-rows:52px 1fr;
+  grid-template-areas:"top top" "side main";height:100vh;overflow:hidden;}
+
+/* TOPBAR */
+.topbar{grid-area:top;background:var(--ink);color:#fff;display:flex;align-items:center;
+  padding:0 20px;gap:14px;border-bottom:1px solid #222;}
+.logo{font-family:var(--serif);font-style:italic;font-size:1.15rem;}
+.logo span{color:var(--accent);}
+.divider{width:1px;height:18px;background:#333;}
+.toplabel{font-size:.65rem;color:#888;text-transform:uppercase;letter-spacing:.1em;}
+.counters{display:flex;gap:18px;margin-left:20px;}
+.ctr{text-align:center;}
+.ctr-v{font-size:.95rem;font-weight:600;line-height:1;}
+.cv-p{color:#4ade80;}.cv-f{color:#f87171;}.cv-n{color:#93c5fd;}
+.ctr-l{font-size:.58rem;color:#666;text-transform:uppercase;letter-spacing:.08em;margin-top:1px;}
+.env{margin-left:auto;display:flex;align-items:center;gap:7px;}
+.envdot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 2s infinite;}
+.envlbl{font-size:.62rem;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* SIDEBAR */
+.sidebar{grid-area:side;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;}
+.s-section{padding:10px 14px 4px;font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--muted);border-bottom:1px solid var(--border2);}
+.s-item{padding:9px 14px;border-bottom:1px solid var(--border2);cursor:pointer;
+  display:flex;align-items:flex-start;gap:9px;transition:background .1s;}
+.s-item:hover{background:#f9f8f5;}
+.s-item.active{background:#f0ede7;border-left:3px solid var(--ink);padding-left:11px;}
+.s-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;margin-top:3px;}
+.s-dot.pass{background:var(--pass);}.s-dot.fail{background:var(--fail);}
+.s-dot.run{background:var(--accent);animation:blink 1s infinite;}
+.s-id{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.s-name{font-size:.76rem;color:var(--ink);line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s-tags{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap;}
+.chip{font-size:.54rem;padding:1px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:.05em;font-weight:500;}
+.c-i{background:#fef9c3;color:#854d0e;}.c-e{background:#fee2e2;color:#991b1b;}
+.c-p{background:#ede9fe;color:#5b21b6;}.c-ppd{background:#e0f2fe;color:#075985;}
+.c-pue{background:#dcfce7;color:#166534;}.c-x{background:#fce7f3;color:#9d174d;}
+.c-r{background:#f3f4f6;color:#374151;}
+
+/* MAIN */
+.main{grid-area:main;overflow-y:auto;display:flex;flex-direction:column;}
+.detail{padding:22px 26px 40px;flex:1;}
+
+.dh{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;
+  padding-bottom:14px;border-bottom:1px solid var(--border);}
+.did{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+.dtitle{font-family:var(--serif);font-size:1.5rem;line-height:1.1;margin-top:2px;}
+.dtitle em{font-style:italic;color:var(--accent);}
+.dactions{margin-left:auto;display:flex;gap:7px;align-items:center;flex-shrink:0;}
+.btn{padding:6px 14px;border-radius:6px;font-family:var(--mono);font-size:.72rem;
+  cursor:pointer;border:1px solid transparent;display:flex;align-items:center;gap:5px;transition:all .15s;}
+.btn-p{background:var(--ink);color:#fff;}.btn-p:hover{background:#333;}
+.btn-s{background:transparent;border-color:var(--border);color:var(--ink2);}
+.btn-s:hover{background:#f5f4f0;}
+.btn-run{background:var(--accent)!important;color:#fff!important;}
+
+.desc-text{font-size:.78rem;color:var(--ink2);line-height:1.6;margin-bottom:16px;}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+
+/* card */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.ch{padding:9px 13px;border-bottom:1px solid var(--border2);font-size:.6rem;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);background:#fafaf8;
+  display:flex;align-items:center;gap:7px;}
+.cb{padding:13px;}
+
+/* kv */
+.kv{width:100%;border-collapse:collapse;}
+.kv tr{border-bottom:1px solid var(--border2);}
+.kv tr:last-child{border-bottom:none;}
+.kv td{padding:5px 0;vertical-align:top;}
+.kv td:first-child{color:var(--muted);font-size:.64rem;width:44%;text-transform:uppercase;
+  letter-spacing:.05em;padding-right:6px;}
+.kv td:last-child{font-size:.76rem;color:var(--ink2);}
+.vhi{color:var(--ink);font-weight:500;}
+.vw{color:var(--warn);}.vf{color:var(--fail);}.vg{color:var(--pass);}
+.vmono{font-family:var(--mono);font-size:.72rem;}
+
+/* items table */
+.it{width:100%;border-collapse:collapse;font-size:.72rem;}
+.it th{padding:5px 9px;text-align:left;font-size:.58rem;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);background:#fafaf8;}
+.it td{padding:6px 9px;border-bottom:1px solid var(--border2);color:var(--ink2);}
+.it tr:last-child td{border-bottom:none;}
+.it .r{text-align:right;font-variant-numeric:tabular-nums;}
+.tots{padding:9px 13px;background:#fafaf8;border-top:1px solid var(--border);}
+.tot-r{display:flex;justify-content:space-between;padding:2px 0;font-size:.75rem;color:var(--ink2);}
+.tot-r.grand{font-weight:600;color:var(--ink);border-top:1px solid var(--border);
+  margin-top:3px;padding-top:5px;font-size:.82rem;}
+.tot-r.red{color:var(--fail);}.tot-r.blu{color:var(--blue);}
+
+/* ── DOCUMENT FLOW ── */
+.doc-flow{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:0;
+  padding:8px 4px 4px;
+  min-height:180px;
+}
+
+.doc-node{display:flex;align-items:flex-start;}
+
+.doc-card{
+  background:var(--panel);
+  border:1.5px solid var(--border);
+  border-radius:8px;
+  padding:11px 13px;
+  width:180px;
+  flex-shrink:0;
+  transition:all .5s cubic-bezier(.22,1,.36,1);
+  opacity:.3;
+  transform:translateY(8px) scale(.97);
+  position:relative;
+}
+.doc-card.emitted{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  box-shadow:0 3px 16px rgba(0,0,0,.08);
+}
+@keyframes glow{
+  0%{box-shadow:0 0 0 0 rgba(217,119,6,.5)}
+  70%{box-shadow:0 0 0 10px rgba(217,119,6,0)}
+  100%{box-shadow:0 0 0 0 rgba(217,119,6,0)}
+}
+.doc-card.active-emit{animation:glow .7s ease;}
+
+.doc-card.t-I{border-top:3px solid #854d0e;}
+.doc-card.t-E{border-top:3px solid var(--fail);}
+.doc-card.t-P{border-top:3px solid #5b21b6;}
+.doc-card.t-X{border-top:3px solid var(--fail);background:var(--fail-bg);}
+
+.dc-type{font-size:.55rem;text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-bottom:3px;}
+.dc-type.I{color:#854d0e;}.dc-type.E{color:var(--fail);}.dc-type.P{color:#5b21b6;}.dc-type.X{color:var(--fail);}
+.dc-folio{font-size:.82rem;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.dc-desc{font-size:.63rem;color:var(--muted);line-height:1.35;margin-bottom:5px;}
+.dc-amount{font-size:.82rem;font-weight:600;color:var(--ink);}
+.dc-amount.neg{color:var(--fail);}
+.dc-meta{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;align-items:center;}
+.dc-date{font-size:.58rem;color:var(--muted);}
+.dc-rel{font-size:.58rem;color:var(--blue);background:var(--blue-bg);
+  padding:2px 5px;border-radius:3px;margin-top:4px;line-height:1.4;}
+.dc-uuid{font-size:.55rem;color:var(--muted);font-family:var(--mono);
+  background:#f0ede8;padding:2px 5px;border-radius:3px;margin-top:4px;
+  word-break:break-all;display:none;}
+.dc-err{font-size:.63rem;color:var(--fail);margin-top:5px;line-height:1.4;
+  background:var(--fail-bg);padding:4px 6px;border-radius:4px;}
+
+/* saldo badge on REP card */
+.dc-saldo{margin-top:5px;}
+.dc-saldo-row{display:flex;justify-content:space-between;font-size:.62rem;
+  border-bottom:1px solid var(--border2);padding:2px 0;}
+.dc-saldo-row:last-child{border-bottom:none;font-weight:600;}
+.dc-saldo-row span:first-child{color:var(--muted);}
+.saldo-zero{color:var(--pass)!important;}
+.saldo-pos{color:var(--warn)!important;}
+
+/* arrow */
+.doc-arrow{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:34px;flex-shrink:0;padding-top:30px;gap:2px;
+  color:var(--border);transition:color .5s;
+}
+.doc-arrow.lit{color:var(--ink2);}
+.doc-arrow .arr-sym{font-size:1rem;line-height:1;}
+.doc-arrow .arr-lbl{font-size:.5rem;color:var(--muted);white-space:nowrap;text-align:center;}
+
+/* wrap arrow after some docs for multi-row flow */
+.doc-flow-row{display:flex;align-items:flex-start;flex-wrap:wrap;gap:0;width:100%;}
+
+/* validations */
+.chk-list{display:flex;flex-direction:column;gap:5px;}
+.chk-item{display:flex;align-items:flex-start;gap:9px;padding:7px 11px;
+  border-radius:6px;border:1px solid var(--border2);background:#fafaf8;transition:all .35s;}
+.chk-item.run{background:var(--blue-bg);border-color:#93c5fd;}
+.chk-item.pass{background:var(--pass-bg);border-color:var(--pass-bdr);}
+.chk-item.fail{background:var(--fail-bg);border-color:var(--fail-bdr);}
+.chk-ico{font-size:.85rem;flex-shrink:0;min-width:13px;margin-top:1px;}
+.chk-label{font-size:.72rem;color:var(--ink);margin-bottom:1px;}
+.chk-d1{font-size:.64rem;color:var(--muted);}
+.chk-d2{font-size:.64rem;color:var(--muted);margin-top:1px;line-height:1.35;}
+.chk-d1.pm{color:var(--pass);}.chk-d1.fm{color:var(--fail);}
+
+/* result banner */
+.rb{display:none;margin-bottom:14px;padding:11px 14px;border-radius:8px;
+  border:1px solid;font-size:.78rem;line-height:1.6;}
+.rb.pass{background:var(--pass-bg);border-color:var(--pass-bdr);color:var(--pass);display:block;}
+.rb.warn{background:var(--warn-bg);border-color:var(--warn-bdr);color:var(--warn);display:block;}
+
+/* empty */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;color:var(--muted);padding:60px;text-align:center;}
+.empty h3{font-family:var(--serif);font-style:italic;font-size:1.3rem;color:var(--ink2);}
+.empty p{font-size:.76rem;line-height:1.6;max-width:320px;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:9px;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">CFDI<span>Lab</span></div>
+  <div class="divider"></div>
+  <div class="toplabel">Portal de Pruebas · Flujos Completos</div>
+  <div class="counters">
+    <div class="ctr"><div class="ctr-v cv-p" id="cnt-p">0</div><div class="ctr-l">Pass</div></div>
+    <div class="ctr"><div class="ctr-v cv-f" id="cnt-f">0</div><div class="ctr-l">Fail</div></div>
+    <div class="ctr"><div class="ctr-v cv-n" id="cnt-n">10</div><div class="ctr-l">Pendiente</div></div>
+  </div>
+  <div class="env"><div class="envdot"></div><div class="envlbl">Sandbox SAT</div></div>
+</header>
+
+<aside class="sidebar">
+  <div class="s-section">Escenarios de Prueba</div>
+
+  <div class="s-item active" onclick="load('SC01')" id="nav-SC01">
+    <div class="s-dot" id="dot-SC01"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-01</div>
+    <div class="s-name">Factura PUE — Contado</div>
+    <div class="s-tags"><span class="chip c-i">Ingreso</span><span class="chip c-pue">PUE</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC02')" id="nav-SC02">
+    <div class="s-dot" id="dot-SC02"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-02</div>
+    <div class="s-name">Factura PPD + REP único</div>
+    <div class="s-tags"><span class="chip c-i">Ingreso</span><span class="chip c-ppd">PPD</span><span class="chip c-p">REP</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC03')" id="nav-SC03">
+    <div class="s-dot" id="dot-SC03"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-03</div>
+    <div class="s-name">Factura PPD + 2 Pagos parciales</div>
+    <div class="s-tags"><span class="chip c-ppd">PPD</span><span class="chip c-p">REP×2</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC04')" id="nav-SC04">
+    <div class="s-dot" id="dot-SC04"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-04</div>
+    <div class="s-name">Factura + NC Devolución + REP</div>
+    <div class="s-tags"><span class="chip c-i">Ingreso</span><span class="chip c-e">NC</span><span class="chip c-p">REP</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC05')" id="nav-SC05">
+    <div class="s-dot" id="dot-SC05"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-05</div>
+    <div class="s-name">Factura PUE + NC Descuento</div>
+    <div class="s-tags"><span class="chip c-i">Ingreso</span><span class="chip c-e">NC</span><span class="chip c-pue">PUE</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC06')" id="nav-SC06">
+    <div class="s-dot" id="dot-SC06"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-06</div>
+    <div class="s-name">Cancelación + Sustitución</div>
+    <div class="s-tags"><span class="chip c-x">Cancelación</span><span class="chip c-r">Motivo 01</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC07')" id="nav-SC07">
+    <div class="s-dot" id="dot-SC07"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-07</div>
+    <div class="s-name">Factura + Retenciones + REP</div>
+    <div class="s-tags"><span class="chip c-i">Ingreso</span><span class="chip c-r">Ret ISR/IVA</span><span class="chip c-p">REP</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC08')" id="nav-SC08">
+    <div class="s-dot" id="dot-SC08"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-08</div>
+    <div class="s-name">Anticipo → Factura → Amortización</div>
+    <div class="s-tags"><span class="chip c-i">ANT</span><span class="chip c-i">FAC</span><span class="chip c-e">EGR</span><span class="chip c-p">REP</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC09')" id="nav-SC09">
+    <div class="s-dot" id="dot-SC09"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-09</div>
+    <div class="s-name">Factura + NC + REP neto</div>
+    <div class="s-tags"><span class="chip c-i">Ingreso</span><span class="chip c-e">NC</span><span class="chip c-p">REP</span></div></div>
+  </div>
+
+  <div class="s-item" onclick="load('SC10')" id="nav-SC10">
+    <div class="s-dot" id="dot-SC10"></div>
+    <div style="flex:1;min-width:0"><div class="s-id">SC-10</div>
+    <div class="s-name">Error: REP sobre PUE (negativo)</div>
+    <div class="s-tags"><span class="chip c-pue">PUE</span><span class="chip c-x">Error esperado</span></div></div>
+  </div>
+</aside>
+
+<main class="main" id="mainPanel">
+  <div class="empty">
+    <h3>Selecciona un escenario</h3>
+    <p>Cada escenario ejecuta el ciclo completo: factura origen → documentos relacionados → liquidación.</p>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => '$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:2});
+const mkUuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+  const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}).toUpperCase();
+
+// ─────────────────────────────────────────────────────────────────────────
+// SCENARIO DATA
+// Each doc: { id, type(I/E/P/X), folio, desc, date, method, forma,
+//   subtotal, iva, ret, retISR, retIVA, total,
+//   saldoAnt, pagado, saldoIns, nota,   ← for type P
+//   relacion:{tipo,ref},                  ← CfdiRelacionados
+//   error,                                ← for type X
+//   conceptos:[{d,cp,u,q,p,imp,iva}] }
+// ─────────────────────────────────────────────────────────────────────────
+const SC = {
+
+SC01:{
+  title:'Factura PUE — <em>Contado</em>',
+  desc:'Venta de mercancía pagada en el mismo acto. Método PUE con forma de pago conocida. Ciclo más simple: un CFDI Ingreso, cobro inmediato, sin REP.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'XAXX010101000',razon:'Público en General',uso:'S01 - Sin efectos fiscales',cp:'64000'},
+  docs:[
+    {id:'D1',type:'I',folio:'A-1001',desc:'Válvulas industriales (10 pzas)',
+     date:'05-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     subtotal:85000,iva:13600,ret:0,total:98600,relacion:null,error:null,
+     conceptos:[{d:'Válvulas acero inox 2"',cp:'25191503',u:'H87',q:10,p:8500,imp:85000,iva:13600}]},
+  ],
+  validations:[
+    {id:'V1',label:'TipoComprobante = I',exp:'I',field:'TipoDeComprobante',note:'Facturas de venta siempre tipo I.'},
+    {id:'V2',label:'MetodoPago = PUE',exp:'PUE',field:'MetodoPago',note:'Pago en una sola exhibición.'},
+    {id:'V3',label:'FormaPago ≠ 99 (forma real indicada)',exp:'03',field:'FormaPago',note:'PUE exige indicar la forma real de cobro.'},
+    {id:'V4',label:'Total = $98,600',exp:'98600',field:'Total',note:'$85,000 + $13,600 = $98,600.'},
+    {id:'V5',label:'No se requiere Complemento de Pago',exp:'N/A',field:'REP',note:'PUE ya acredita el pago fiscalmente.'},
+    {id:'V6',label:'UUID + Timbre PAC presentes',exp:'UUID ok',field:'TimbreFiscalDigital',note:'NoCertificadoSAT debe existir en el XML.'},
+  ],
+  neg:false,
+},
+
+SC02:{
+  title:'Factura PPD + <em>Complemento de Pago único</em>',
+  desc:'Servicio de mantenimiento a crédito 30 días. Factura PPD/99. Al recibir el pago total el proveedor emite un REP que cierra el saldo en cero.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'B-2001',desc:'Servicio de mantenimiento preventivo',
+     date:'01-Mar-2026',method:'PPD',forma:'99 - Por definir',
+     subtotal:150000,iva:24000,ret:0,total:174000,relacion:null,error:null,
+     conceptos:[{d:'Mantenimiento preventivo equipos',cp:'76111501',u:'E48',q:1,p:150000,imp:150000,iva:24000}]},
+    {id:'D2',type:'P',folio:'REP-2001',desc:'Pago total — saldo cero',
+     date:'01-Abr-2026 (antes del día 5)',method:'PUE',forma:'03 - Transferencia',
+     total:174000,saldoAnt:174000,pagado:174000,saldoIns:0,
+     relacion:{tipo:'09 - Pagos en parcialidades o diferido',ref:'B-2001'},error:null,conceptos:[]},
+  ],
+  validations:[
+    {id:'V1',label:'Factura B-2001: MetodoPago = PPD',exp:'PPD',field:'MetodoPago',note:'Pago diferido — la factura no acredita el cobro sola.'},
+    {id:'V2',label:'Factura B-2001: FormaPago = 99',exp:'99',field:'FormaPago',note:'Desconocida al emitir; se registra en el REP.'},
+    {id:'V3',label:'REP: TipoComprobante = P',exp:'P',field:'TipoDeComprobante REP',note:'Tipo P exclusivo del Complemento de Pago.'},
+    {id:'V4',label:'REP: ImpSaldoAnt = $174,000',exp:'174000',field:'ImpSaldoAnt',note:'Primer pago: saldo anterior = total factura.'},
+    {id:'V5',label:'REP: ImpSaldoInsoluto = $0',exp:'0',field:'ImpSaldoInsoluto',note:'Pago cubre el total — saldo en cero.'},
+    {id:'V6',label:'REP relaciona UUID de B-2001',exp:'UUID-B2001',field:'DoctoRelacionado',note:'Vínculo obligatorio para validez fiscal.'},
+  ],
+  neg:false,
+},
+
+SC03:{
+  title:'Factura PPD + <em>2 Pagos parciales</em>',
+  desc:'Equipo CNC $348,000. Cliente paga 50% en febrero y 50% en marzo. Cada pago genera un REP con saldos encadenados. El REP-2 cierra el saldo en cero.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'B-2002',desc:'Equipo industrial CNC (3 unidades)',
+     date:'01-Feb-2026',method:'PPD',forma:'99 - Por definir',
+     subtotal:300000,iva:48000,ret:0,total:348000,relacion:null,error:null,
+     conceptos:[{d:'Torno CNC industrial mod. 500',cp:'40141700',u:'H87',q:3,p:100000,imp:300000,iva:48000}]},
+    {id:'D2',type:'P',folio:'REP-1',desc:'1er pago parcial — 50%',
+     date:'05-Mar-2026 (límite)',method:'PUE',forma:'03 - Transferencia',
+     total:174000,saldoAnt:348000,pagado:174000,saldoIns:174000,
+     relacion:{tipo:'09 - Pagos en parcialidades',ref:'B-2002'},error:null,conceptos:[]},
+    {id:'D3',type:'P',folio:'REP-2',desc:'2do pago — saldo final = $0',
+     date:'05-Abr-2026 (límite)',method:'PUE',forma:'03 - Transferencia',
+     total:174000,saldoAnt:174000,pagado:174000,saldoIns:0,
+     relacion:{tipo:'09 - Pagos en parcialidades',ref:'B-2002'},error:null,conceptos:[]},
+  ],
+  validations:[
+    {id:'V1',label:'REP-1: ImpSaldoAnt = $348,000',exp:'348000',field:'ImpSaldoAnt REP-1',note:'Saldo antes del 1er pago = total factura.'},
+    {id:'V2',label:'REP-1: ImpPagado = $174,000',exp:'174000',field:'ImpPagado REP-1',note:'50% del total.'},
+    {id:'V3',label:'REP-1: ImpSaldoInsoluto = $174,000',exp:'174000',field:'ImpSaldoIns REP-1',note:'$348,000 − $174,000 = $174,000 pendiente.'},
+    {id:'V4',label:'REP-2: ImpSaldoAnt = $174,000',exp:'174000',field:'ImpSaldoAnt REP-2',note:'Hereda ImpSaldoInsoluto del REP-1.'},
+    {id:'V5',label:'REP-2: ImpPagado = $174,000',exp:'174000',field:'ImpPagado REP-2',note:'Segundo y último pago.'},
+    {id:'V6',label:'REP-2: ImpSaldoInsoluto = $0',exp:'0',field:'ImpSaldoIns REP-2',note:'Factura totalmente liquidada.'},
+    {id:'V7',label:'Ambos REP relacionan UUID de B-2002',exp:'UUID-B2002',field:'DoctoRelacionado ×2',note:'Mismo UUID en ambos REP.'},
+  ],
+  neg:false,
+},
+
+SC04:{
+  title:'Factura PPD + <em>NC Devolución</em> + REP neto',
+  desc:'Se venden 3 equipos CNC ($348,000 PPD). El cliente devuelve 1 unidad antes del pago → NC por $116,000. Luego paga el saldo neto de $232,000 con un REP.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'B-2010',desc:'Equipo industrial CNC (3 unidades)',
+     date:'01-Feb-2026',method:'PPD',forma:'99 - Por definir',
+     subtotal:300000,iva:48000,ret:0,total:348000,relacion:null,error:null,
+     conceptos:[{d:'Torno CNC industrial mod. 500',cp:'40141700',u:'H87',q:3,p:100000,imp:300000,iva:48000}]},
+    {id:'D2',type:'E',folio:'NC-010',desc:'Devolución 1 unidad CNC',
+     date:'15-Feb-2026',method:'PPD',forma:'99 - Por definir',
+     subtotal:100000,iva:16000,ret:0,total:116000,
+     relacion:{tipo:'01 - Nota de crédito de documentos relacionados',ref:'B-2010'},error:null,
+     conceptos:[{d:'Devolución torno CNC (1 de 3)',cp:'40141700',u:'H87',q:1,p:100000,imp:100000,iva:16000}]},
+    {id:'D3',type:'P',folio:'REP-010',desc:'Pago neto $232,000 (post-devolución)',
+     date:'28-Feb-2026',method:'PUE',forma:'03 - Transferencia',
+     total:232000,saldoAnt:348000,pagado:232000,saldoIns:116000,
+     nota:'Saldo $116,000 compensado por NC-010',
+     relacion:{tipo:'09 - Pago diferido',ref:'B-2010'},error:null,conceptos:[]},
+  ],
+  validations:[
+    {id:'V1',label:'NC-010 emitida ANTES del REP',exp:'15-Feb < 28-Feb',field:'Cronología docs',note:'La NC debe preceder al pago para ajustar el ingreso.'},
+    {id:'V2',label:'NC-010: TipoComprobante = E',exp:'E',field:'TipoDeComprobante NC',note:'CFDI Egreso para devoluciones parciales.'},
+    {id:'V3',label:'NC-010: TipoRelacion = 01',exp:'01',field:'TipoRelacion',note:'Clave 01 = Nota de crédito sobre docs relacionados.'},
+    {id:'V4',label:'NC-010: IVA devolución = $16,000',exp:'16000',field:'IVA NC',note:'$100,000 × 16% = $16,000 a favor del cliente.'},
+    {id:'V5',label:'REP: ImpSaldoAnt = $348,000',exp:'348000',field:'ImpSaldoAnt',note:'Saldo anterior = total factura original (no el neto).'},
+    {id:'V6',label:'REP: ImpPagado = $232,000',exp:'232000',field:'ImpPagado',note:'Cliente paga $348,000 − $116,000 NC = $232,000.'},
+    {id:'V7',label:'Saldo $116,000 compensado por NC',exp:'Neto $0',field:'Contabilidad',note:'NC-010 cubre el saldo insoluto del REP. Ciclo cerrado.'},
+  ],
+  neg:false,
+},
+
+SC05:{
+  title:'Factura PUE + <em>NC Descuento</em> comercial',
+  desc:'Factura de consultoría $200,000 pagada al contado (PUE). Post-pago se acuerda un descuento del 10%. NC incluye IVA del descuento; el proveedor devuelve $23,200.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'A-1050',desc:'Consultoría técnica especializada',
+     date:'01-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     subtotal:200000,iva:32000,ret:0,total:232000,relacion:null,error:null,
+     conceptos:[{d:'Consultoría técnica Q1-2026',cp:'80131804',u:'E48',q:1,p:200000,imp:200000,iva:32000}]},
+    {id:'D2',type:'E',folio:'NC-020',desc:'Descuento comercial 10% sobre A-1050',
+     date:'15-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     subtotal:20000,iva:3200,ret:0,total:23200,
+     relacion:{tipo:'01 - Nota de crédito de documentos relacionados',ref:'A-1050'},error:null,
+     conceptos:[{d:'Desc. comercial 10% s/A-1050',cp:'84111506',u:'ACT',q:1,p:20000,imp:20000,iva:3200}]},
+  ],
+  validations:[
+    {id:'V1',label:'Factura A-1050 emitida y pagada primero',exp:'PUE - 01-Mar',field:'Cronología',note:'La factura base debe existir y pagarse antes de la NC.'},
+    {id:'V2',label:'NC-020: TipoComprobante = E',exp:'E',field:'TipoDeComprobante',note:'CFDI de Egreso para descuentos post-facturación.'},
+    {id:'V3',label:'NC-020: TipoRelacion = 01',exp:'01',field:'TipoRelacion',note:'Nota de crédito sobre documento relacionado.'},
+    {id:'V4',label:'NC-020 incluye IVA del descuento ($3,200)',exp:'3200',field:'IVA NC',note:'$20,000 × 16% = $3,200 a favor del cliente.'},
+    {id:'V5',label:'FormaPago NC = 03 (misma vía)',exp:'03',field:'FormaPago NC',note:'La devolución monetaria usa el mismo canal de pago.'},
+    {id:'V6',label:'NC ($23,200) no supera factura ($232,000)',exp:'NC ≤ Factura',field:'Límite monto',note:'Validación de tope: NC no puede superar el doc relacionado.'},
+  ],
+  neg:false,
+},
+
+SC06:{
+  title:'Factura errónea → <em>Cancelación</em> → Sustituta',
+  desc:'Factura emitida con RFC incorrecto. Se cancela con Motivo 01 (requiere sustituto). Se emite una factura nueva corregida con TipoRelacion 04 referenciando la cancelada.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'RFC-INCORRECTO',razon:'Receptor Erróneo SA de CV',uso:'G03 - Gastos en general',cp:'—'},
+  docs:[
+    {id:'D1',type:'X',folio:'A-1002',desc:'Factura con RFC incorrecto — CANCELADA',
+     date:'04-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     subtotal:50000,iva:8000,ret:0,total:58000,relacion:null,
+     error:'Motivo cancelación 01: RFC receptor incorrecto. Requiere sustituto.',
+     conceptos:[{d:'Componentes electrónicos',cp:'26111700',u:'H87',q:50,p:1000,imp:50000,iva:8000}]},
+    {id:'D2',type:'I',folio:'A-1002-SUS',desc:'Factura sustituta — RFC corregido',
+     date:'05-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     subtotal:50000,iva:8000,ret:0,total:58000,
+     relacion:{tipo:'04 - Sustitución de CFDI previos',ref:'A-1002'},error:null,
+     conceptos:[{d:'Componentes electrónicos',cp:'26111700',u:'H87',q:50,p:1000,imp:50000,iva:8000}]},
+  ],
+  validations:[
+    {id:'V1',label:'A-1002: cancelación con Motivo 01',exp:'01',field:'MotivoCancelacion',note:'01 = con relación; requiere indicar UUID del sustituto.'},
+    {id:'V2',label:'FolioSustitucion en solicitud',exp:'UUID-A1002-SUS',field:'FolioSustitucion',note:'UUID de la sustituta va en la petición de cancelación.'},
+    {id:'V3',label:'Sustituta: TipoRelacion = 04',exp:'04',field:'TipoRelacion SUS',note:'Clave 04 = Sustitución de CFDI previos.'},
+    {id:'V4',label:'Sustituta: RFC receptor corregido',exp:'INM850312KT4',field:'RFC Receptor',note:'La sustituta usa el RFC válido del receptor.'},
+    {id:'V5',label:'A-1002 queda estado = Cancelado en SAT',exp:'Cancelado',field:'EstadoCFDI',note:'El UUID queda cancelado en el buzón tributario.'},
+    {id:'V6',label:'Receptor acepta cancelación (72 hrs)',exp:'Aceptada',field:'Proceso SAT',note:'Tiempo de respuesta en buzón tributario del receptor.'},
+  ],
+  neg:false,
+},
+
+SC07:{
+  title:'Factura con <em>Retenciones ISR + IVA</em> + REP',
+  desc:'Honorarios de persona física a persona moral. El receptor retiene ISR 10% y ⅔ del IVA (10.6667%). El monto a transferir es $76,266. Se liquida con REP al recibir el pago.',
+  emisor:{rfc:'GOMA780512JK3',razon:'Gómez Ayala Consultoría SC',reg:'612 - Actividades Empresariales PF'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'H-0012',desc:'Honorarios consultoría fiscal Q1-2026',
+     date:'05-Mar-2026',method:'PPD',forma:'99 - Por definir',
+     subtotal:80000,iva:12800,retISR:8000,retIVA:8534,ret:16534,total:76266,relacion:null,error:null,
+     conceptos:[{d:'Consultoría fiscal y planeación Q1',cp:'80131804',u:'E48',q:1,p:80000,imp:80000,iva:12800}]},
+    {id:'D2',type:'P',folio:'REP-H0012',desc:'Pago neto $76,266 (con retenciones)',
+     date:'17-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     total:76266,saldoAnt:76266,pagado:76266,saldoIns:0,
+     relacion:{tipo:'09 - Pago diferido',ref:'H-0012'},error:null,conceptos:[]},
+  ],
+  validations:[
+    {id:'V1',label:'Ret. ISR = 10% subtotal ($8,000)',exp:'8000',field:'RetISR',note:'$80,000 × 10% = $8,000.'},
+    {id:'V2',label:'Ret. IVA = 10.6667% ($8,533)',exp:'8533.33',field:'RetIVA',note:'$80,000 × 10.6667% = $8,533 (⅔ del IVA trasladado).'},
+    {id:'V3',label:'Total = $76,266 (Sub+IVA−Retenciones)',exp:'76266',field:'Total',note:'$80,000+$12,800−$8,000−$8,534 = $76,266.'},
+    {id:'V4',label:'Retenciones en nodo XML propio',exp:'Nodo Retenciones',field:'Estructura XML',note:'No como traslados negativos — nodo específico.'},
+    {id:'V5',label:'REP: ImpSaldoAnt = $76,266',exp:'76266',field:'ImpSaldoAnt REP',note:'El REP usa el Total neto a pagar.'},
+    {id:'V6',label:'Receptor entera retenciones al SAT (día 17)',exp:'DIOT ok',field:'Obligación PM',note:'La persona moral entera ISR y IVA retenidos el día 17.'},
+  ],
+  neg:false,
+},
+
+SC08:{
+  title:'Anticipo → <em>Factura definitiva</em> → Amortización → REP',
+  desc:'Proyecto $200,000+IVA. Cliente paga anticipo 30% ($69,600). Al entregar se factura el total ($232,000), se emite CFDI Egreso para amortizar el anticipo y se cobra el saldo $162,400 con REP.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'ANT-001',desc:'Anticipo 30% — Proyecto Expansión Planta',
+     date:'10-Feb-2026',method:'PUE',forma:'03 - Transferencia',
+     subtotal:60000,iva:9600,ret:0,total:69600,relacion:null,error:null,
+     conceptos:[{d:'Anticipo 30% Proy. Expansión Planta',cp:'84111506',u:'ACT',q:1,p:60000,imp:60000,iva:9600}]},
+    {id:'D2',type:'I',folio:'C-0050',desc:'Factura total del proyecto (entrega)',
+     date:'05-Mar-2026',method:'PPD',forma:'99 - Por definir',
+     subtotal:200000,iva:32000,ret:0,total:232000,relacion:null,error:null,
+     conceptos:[{d:'Desarrollo e instalación Proy. Expansión',cp:'81112105',u:'E48',q:1,p:200000,imp:200000,iva:32000}]},
+    {id:'D3',type:'E',folio:'EGR-001',desc:'Amortización anticipo ANT-001',
+     date:'05-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     subtotal:60000,iva:9600,ret:0,total:69600,
+     relacion:{tipo:'07 - CFDI por aplicación de anticipos',ref:'ANT-001'},error:null,
+     conceptos:[{d:'Aplicación anticipo recibido (30%)',cp:'84111506',u:'ACT',q:1,p:60000,imp:60000,iva:9600}]},
+    {id:'D4',type:'P',folio:'REP-C0050',desc:'Pago saldo restante $162,400',
+     date:'05-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     total:162400,saldoAnt:232000,pagado:162400,saldoIns:69600,
+     nota:'Saldo $69,600 compensado por EGR-001 (amortización)',
+     relacion:{tipo:'09 - Pago diferido',ref:'C-0050'},error:null,conceptos:[]},
+  ],
+  validations:[
+    {id:'V1',label:'ANT-001: CFDI Ingreso al recibir anticipo',exp:'I',field:'TipoComprobante ANT',note:'El anticipo genera ingreso fiscal al momento del cobro.'},
+    {id:'V2',label:'C-0050: Factura total $232,000 (no el neto)',exp:'232000',field:'Total C-0050',note:'Se factura el TOTAL del proyecto, no el saldo residual.'},
+    {id:'V3',label:'EGR-001: TipoRelacion = 07 → ANT-001',exp:'07',field:'TipoRelacion EGR',note:'Clave 07 = Aplicación de anticipos recibidos.'},
+    {id:'V4',label:'EGR-001: monto = anticipo cobrado ($69,600)',exp:'69600',field:'Total EGR-001',note:'El CFDI Egreso debe ser exactamente igual al anticipo.'},
+    {id:'V5',label:'REP saldo = $162,400 ($232,000 − $69,600)',exp:'162400',field:'ImpPagado REP',note:'Cliente paga el diferencial al recibir el proyecto.'},
+    {id:'V6',label:'Saldo $69,600 compensado por EGR-001',exp:'Neto $0',field:'Contabilidad',note:'El CFDI Egreso cierra el saldo insoluto del REP.'},
+  ],
+  neg:false,
+},
+
+SC09:{
+  title:'Factura PPD + <em>NC</em> previa + REP sobre saldo neto',
+  desc:'Maquinaria $580,000 PPD. Cliente devuelve 1 unidad ($116,000) antes de pagar → NC emitida primero en el ejercicio. Luego paga $464,000 neto; REP cierra el ciclo.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'B-2050',desc:'Maquinaria proceso alimenticio (5 uds)',
+     date:'01-Feb-2026',method:'PPD',forma:'99 - Por definir',
+     subtotal:500000,iva:80000,ret:0,total:580000,relacion:null,error:null,
+     conceptos:[{d:'Mezcladora industrial 500L',cp:'23271801',u:'H87',q:5,p:100000,imp:500000,iva:80000}]},
+    {id:'D2',type:'E',folio:'NC-050',desc:'Devolución 1 mezcladora 500L',
+     date:'15-Feb-2026',method:'PPD',forma:'99 - Por definir',
+     subtotal:100000,iva:16000,ret:0,total:116000,
+     relacion:{tipo:'01 - Nota de crédito de documentos relacionados',ref:'B-2050'},error:null,
+     conceptos:[{d:'Devolución mezcladora 500L (1 de 5)',cp:'23271801',u:'H87',q:1,p:100000,imp:100000,iva:16000}]},
+    {id:'D3',type:'P',folio:'REP-2050',desc:'Pago neto $464,000',
+     date:'01-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     total:464000,saldoAnt:580000,pagado:464000,saldoIns:116000,
+     nota:'Saldo $116,000 compensado por NC-050',
+     relacion:{tipo:'09 - Pago diferido',ref:'B-2050'},error:null,conceptos:[]},
+  ],
+  validations:[
+    {id:'V1',label:'NC-050 emitida ANTES del REP (15-Feb < 01-Mar)',exp:'Cronología ok',field:'Fecha NC vs REP',note:'La NC debe preceder al pago — ajusta el ingreso primero.'},
+    {id:'V2',label:'NC-050: TipoRelacion = 01 → B-2050',exp:'01',field:'TipoRelacion NC',note:'Nota de crédito sobre documentos relacionados.'},
+    {id:'V3',label:'NC incluye IVA devuelto ($16,000)',exp:'16000',field:'IVA NC',note:'$100,000 × 16% = $16,000 a favor del cliente.'},
+    {id:'V4',label:'REP: ImpSaldoAnt = $580,000 (total original)',exp:'580000',field:'ImpSaldoAnt',note:'El REP usa el total de la factura, no el neto.'},
+    {id:'V5',label:'REP: ImpPagado = $464,000',exp:'464000',field:'ImpPagado',note:'$580,000 − $116,000 NC = $464,000 que el cliente paga.'},
+    {id:'V6',label:'NC compensa saldo insoluto $116,000 → $0 neto',exp:'$0 neto',field:'Contabilidad',note:'NC-050 cierra el saldo residual. Ciclo completado.'},
+  ],
+  neg:false,
+},
+
+SC10:{
+  title:'Error esperado: <em>REP sobre factura PUE</em>',
+  desc:'Prueba negativa. La factura A-1010 tiene MetodoPago = PUE. Se intenta emitir un Complemento de Pago. El portal debe rechazar la operación con error descriptivo.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General Personas Morales'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'A-1010',desc:'Material de empaque polietileno (500 pzas)',
+     date:'01-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+     subtotal:100000,iva:16000,ret:0,total:116000,relacion:null,error:null,
+     conceptos:[{d:'Material empaque polietileno HD',cp:'24112700',u:'H87',q:500,p:200,imp:100000,iva:16000}]},
+    {id:'D2',type:'X',folio:'REP-ERR',desc:'⚠ Intento de REP inválido',
+     date:'05-Mar-2026',method:null,forma:null,
+     subtotal:null,iva:null,ret:null,total:116000,
+     relacion:{tipo:'09 - Pago diferido (INVÁLIDO sobre PUE)',ref:'A-1010'},
+     error:'ERROR: La factura referenciada A-1010 tiene MetodoPago = PUE. No se puede emitir Complemento de Pago. Operación rechazada.',
+     conceptos:[]},
+  ],
+  validations:[
+    {id:'V1',label:'Portal detecta MetodoPago = PUE en A-1010',exp:'PUE detectado',field:'Validación previa emisión',note:'El sistema verifica el MetodoPago de la factura referenciada antes de procesar.'},
+    {id:'V2',label:'Portal emite error: ERROR_REP_PUE',exp:'ERROR_REP_PUE',field:'Código de error',note:'"No se puede emitir REP sobre CFDI con MetodoPago PUE".'},
+    {id:'V3',label:'Mensaje de error claro y descriptivo',exp:'Mensaje UX ok',field:'UX / Usabilidad',note:'El usuario entiende la causa y la solución correcta.'},
+    {id:'V4',label:'Factura A-1010 permanece vigente e intacta',exp:'Estado: vigente',field:'Integridad factura',note:'El intento fallido no altera el estado del CFDI original.'},
+    {id:'V5',label:'Log de auditoría registra el intento rechazado',exp:'Audit trail ok',field:'Compliance / Trazabilidad',note:'Para efectos de auditoría y monitoreo de intentos fallidos.'},
+  ],
+  neg:true,
+},
+
+};
+
+// ─── State ────────────────────────────────────────────────────────────────
+let cur = null;
+const done = {};
+const cnts = {p:0,f:0,n:10};
+const uuids = {};
+
+// ─── Render helpers ───────────────────────────────────────────────────────
+function chipT(t){
+  const m={I:'<span class="chip c-i">CFDI·I</span>',E:'<span class="chip c-e">CFDI·E</span>',
+           P:'<span class="chip c-p">CFDI·P</span>',X:'<span class="chip c-x">ERROR</span>'};
+  return m[t]||'';
+}
+function typeLabel(t){
+  return {I:'📄 CFDI Ingreso',E:'📄 CFDI Egreso',P:'📄 CFDI Pago',X:'⛔ Operación rechazada'}[t];
+}
+
+function docCardHtml(id, d, i){
+  // Saldo section for REP
+  let saldoHtml='';
+  if(d.type==='P'){
+    saldoHtml=`<div class="dc-saldo">
+      <div class="dc-saldo-row"><span>Saldo anterior</span><span>${fmt(d.saldoAnt)}</span></div>
+      <div class="dc-saldo-row"><span>Importe pagado</span><span class="vg">${fmt(d.pagado)}</span></div>
+      <div class="dc-saldo-row"><span>Saldo insoluto</span><span class="${d.saldoIns>0?'saldo-pos':'saldo-zero'}">${fmt(d.saldoIns)}</span></div>
+      ${d.nota?`<div style="font-size:.58rem;color:var(--blue);margin-top:3px;line-height:1.35">${d.nota}</div>`:''}
+    </div>`;
+  }
+  // Totals for I/E
+  let totHtml='';
+  if(d.type!=='P' && d.subtotal!=null){
+    totHtml=`<div style="margin-top:6px;border-top:1px solid var(--border2);padding-top:5px">
+      <div style="font-size:.62rem;color:var(--muted)">Sub: ${fmt(d.subtotal)}</div>
+      ${d.retISR?`<div style="font-size:.62rem;color:var(--fail)">Ret.ISR: −${fmt(d.retISR)}</div>`:''}
+      ${d.retIVA?`<div style="font-size:.62rem;color:var(--fail)">Ret.IVA: −${fmt(d.retIVA)}</div>`:''}
+      <div style="font-size:.78rem;font-weight:600;color:${d.type==='E'?'var(--fail)':'var(--ink)'}">Total: ${fmt(d.total)}</div>
+    </div>`;
+  }
+  const relHtml = d.relacion ? `<div class="dc-rel">🔗 ${d.relacion.tipo}<br><strong>${d.relacion.ref}</strong></div>` : '';
+  const errHtml = d.error ? `<div class="dc-err">⛔ ${d.error}</div>` : '';
+  const methodHtml = d.method ? `<div class="dc-meta"><span class="chip ${d.method==='PPD'?'c-ppd':'c-pue'}">${d.method}</span>${d.forma?`<span class="dc-date">${d.forma}</span>`:''}</div>` : '';
+
+  return `<div class="doc-card t-${d.type}" id="dc-${id}-${d.id}">
+    <div class="dc-type ${d.type}">${typeLabel(d.type)}</div>
+    <div class="dc-folio">${d.folio}</div>
+    <div class="dc-desc">${d.desc}</div>
+    <div class="dc-meta"><span class="dc-date">📅 ${d.date}</span></div>
+    ${methodHtml}
+    ${saldoHtml}
+    ${totHtml}
+    ${relHtml}
+    ${errHtml}
+    <div class="dc-uuid" id="uuid-${id}-${d.id}"></div>
+  </div>`;
+}
+
+function arrowHtml(id, d, i){
+  if(!d.relacion && d.type==='I') return '';
+  const lbl = d.relacion ? d.relacion.tipo.split(' - ')[0] : '→';
+  return `<div class="doc-arrow" id="arr-${id}-${i}">
+    <div class="arr-sym">→</div>
+    <div class="arr-lbl">${lbl}</div>
+  </div>`;
+}
+
+// ─── Load ─────────────────────────────────────────────────────────────────
+function load(id){
+  cur = id;
+  const sc = SC[id];
+  uuids[id] = {};
+
+  document.querySelectorAll('.s-item').forEach(e=>e.classList.remove('active'));
+  $(` nav-${id}`);//skip
+  document.getElementById(`nav-${id}`).classList.add('active');
+
+  // Doc flow HTML
+  let flowHtml = '';
+  sc.docs.forEach((d,i)=>{
+    if(i>0) flowHtml += arrowHtml(id, d, i);
+    flowHtml += `<div class="doc-node">${docCardHtml(id, d, i)}</div>`;
+  });
+
+  // Validation HTML
+  let valHtml='';
+  sc.validations.forEach(v=>{
+    valHtml+=`<div class="chk-item" id="chk-${id}-${v.id}">
+      <div class="chk-ico">○</div>
+      <div>
+        <div class="chk-label">${v.label}</div>
+        <div class="chk-d1" id="chkd1-${id}-${v.id}">Campo: <strong>${v.field}</strong> · Esperado: <strong>${v.exp}</strong></div>
+        <div class="chk-d2">${v.note}</div>
+      </div>
+    </div>`;
+  });
+
+  const negBadge = sc.neg ? '<span class="chip c-x" style="font-size:.65rem;padding:2px 7px;margin-left:6px">Prueba negativa</span>' : '';
+
+  // First doc conceptos
+  const d0 = sc.docs[0];
+  const concHtml = d0.conceptos.map(c=>`<tr>
+    <td>${c.d}</td><td>${c.cp}</td><td>${c.u}</td>
+    <td class="r">${c.q}</td><td class="r">${fmt(c.p)}</td>
+    <td class="r">${fmt(c.imp)}</td><td class="r">${fmt(c.iva)}</td>
+  </tr>`).join('');
+
+  document.getElementById('mainPanel').innerHTML = `
+  <div class="detail">
+    <div id="rb-${id}" class="rb"></div>
+
+    <div class="dh">
+      <div>
+        <div class="did">${id.replace('SC','SC-')}${negBadge}</div>
+        <div class="dtitle">${sc.title}</div>
+      </div>
+      <div class="dactions">
+        <button class="btn btn-s" onclick="resetSc('${id}')">↺ Limpiar</button>
+        <button class="btn btn-p" id="runbtn-${id}" onclick="runSc('${id}')">▶ Ejecutar flujo</button>
+      </div>
+    </div>
+
+    <p class="desc-text">${sc.desc}</p>
+
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><div class="ch">🏭 Emisor</div><div class="cb"><table class="kv">
+        <tr><td>RFC</td><td class="vmono vhi">${sc.emisor.rfc}</td></tr>
+        <tr><td>Razón Social</td><td>${sc.emisor.razon}</td></tr>
+        <tr><td>Régimen</td><td>${sc.emisor.reg}</td></tr>
+      </table></div></div>
+      <div class="card"><div class="ch">🏢 Receptor</div><div class="cb"><table class="kv">
+        <tr><td>RFC</td><td class="vmono vhi ${sc.receptor.rfc==='RFC-INCORRECTO'?'vf':''}">${sc.receptor.rfc}</td></tr>
+        <tr><td>Razón Social</td><td>${sc.receptor.razon}</td></tr>
+        <tr><td>Uso CFDI</td><td>${sc.receptor.uso}</td></tr>
+        <tr><td>C.P. Fiscal</td><td>${sc.receptor.cp}</td></tr>
+      </table></div></div>
+    </div>
+
+    <!-- FULL DOCUMENT FLOW -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch">🔄 Flujo completo de documentos — ${sc.docs.length} CFDI en este escenario</div>
+      <div class="cb" style="overflow-x:auto;padding-bottom:16px">
+        <div class="doc-flow">${flowHtml}</div>
+      </div>
+    </div>
+
+    <!-- Conceptos primer doc -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch">📦 Conceptos — ${d0.folio}</div>
+      <table class="it"><thead><tr>
+        <th>Descripción</th><th>Clave SAT</th><th>Unidad</th>
+        <th class="r">Cant</th><th class="r">P.Unit</th><th class="r">Importe</th><th class="r">IVA</th>
+      </tr></thead><tbody>${concHtml}</tbody></table>
+      <div class="tots">
+        <div class="tot-r"><span>Subtotal</span><span>${fmt(d0.subtotal)}</span></div>
+        <div class="tot-r blu"><span>IVA Traslado 16%</span><span>+${fmt(d0.iva)}</span></div>
+        ${d0.retISR?`<div class="tot-r red"><span>Ret. ISR 10%</span><span>−${fmt(d0.retISR)}</span></div>`:''}
+        ${d0.retIVA?`<div class="tot-r red"><span>Ret. IVA ⅔</span><span>−${fmt(d0.retIVA)}</span></div>`:''}
+        ${d0.ret&&!d0.retISR?`<div class="tot-r red"><span>Retenciones</span><span>−${fmt(d0.ret)}</span></div>`:''}
+        <div class="tot-r grand"><span>Total</span><span>${fmt(d0.total)}</span></div>
+      </div>
+    </div>
+
+    <!-- Validations -->
+    <div class="card">
+      <div class="ch">✅ Validaciones del escenario — ${sc.validations.length} puntos de control</div>
+      <div class="cb"><div class="chk-list">${valHtml}</div></div>
+    </div>
+  </div>`;
+}
+
+// ─── Run ──────────────────────────────────────────────────────────────────
+function runSc(id){
+  const sc = SC[id];
+  const btn = $(`runbtn-${id}`);
+  btn.textContent='⟳ Emitiendo documentos...';
+  btn.className='btn btn-run';
+  btn.disabled=true;
+  uuids[id]={};
+
+  // Reset cards
+  sc.docs.forEach(d=>{
+    const el=$(`dc-${id}-${d.id}`);
+    if(el){el.classList.remove('emitted','active-emit');}
+    const uel=$(`uuid-${id}-${d.id}`);
+    if(uel){uel.textContent='';uel.style.display='none';}
+  });
+
+  // Emit each document sequentially
+  const STEP = 1200;
+  sc.docs.forEach((d,i)=>{
+    setTimeout(()=>{
+      const el=$(`dc-${id}-${d.id}`);
+      const arr=$(`arr-${id}-${i}`);
+      if(!el) return;
+      el.classList.add('active-emit');
+      setTimeout(()=>{
+        el.classList.remove('active-emit');
+        el.classList.add('emitted');
+        if(arr) arr.classList.add('lit');
+        // UUID for valid docs
+        if(d.type!=='X'){
+          const u = mkUuid();
+          uuids[id][d.id]=u;
+          const uel=$(`uuid-${id}-${d.id}`);
+          if(uel){uel.style.display='block';uel.textContent='🔏 UUID: '+u.slice(0,24)+'...';}
+        }
+      },600);
+    }, i*STEP);
+  });
+
+  // After docs, run validations
+  const valStart = sc.docs.length*STEP + 700;
+  sc.validations.forEach((v,i)=>{
+    // Set running
+    setTimeout(()=>{
+      const el=$(`chk-${id}-${v.id}`);
+      if(el){el.className='chk-item run';el.querySelector('.chk-ico').textContent='◌';}
+    }, valStart + i*360);
+    // Set pass
+    setTimeout(()=>{
+      const el=$(`chk-${id}-${v.id}`);
+      if(!el) return;
+      el.className='chk-item pass';
+      el.querySelector('.chk-ico').textContent='✓';
+      const d1=$(`chkd1-${id}-${v.id}`);
+      if(d1) d1.className='chk-d1 pm';
+      if(i===sc.validations.length-1) setTimeout(()=>finish(id,sc),400);
+    }, valStart + i*360 + 340);
+  });
+}
+
+function finish(id,sc){
+  const btn=$(`runbtn-${id}`);
+  const rb=$(`rb-${id}`);
+  btn.textContent='✓ Flujo completado';
+  btn.className='btn btn-p';
+  btn.disabled=false;
+
+  if(sc.neg){
+    rb.className='rb warn';
+    rb.innerHTML=`<strong>⚠️ Prueba negativa — APROBADA.</strong> El portal detectó y rechazó correctamente la emisión de REP sobre PUE. Ningún UUID fue generado para el documento inválido. Intento registrado en log de auditoría.`;
+  } else {
+    const emitted = sc.docs.filter(d=>d.type!=='X').map(d=>
+      `<span style="font-family:monospace;font-size:.68rem;display:block"><strong>${d.folio}</strong>: ${uuids[id][d.id]||'—'}</span>`).join('');
+    rb.className='rb pass';
+    rb.innerHTML=`<strong>✓ Flujo completado — ${sc.docs.filter(d=>d.type!=='X').length} de ${sc.docs.length} CFDI emitidos exitosamente.</strong><br>${emitted}`;
+  }
+
+  if(!done[id]){
+    done[id]='pass'; cnts.p++; cnts.n--;
+    $('cnt-p').textContent=cnts.p;
+    $('cnt-n').textContent=cnts.n;
+    $(`dot-${id}`).className='s-dot pass';
+  }
+}
+
+function resetSc(id){
+  if(done[id]){delete done[id];cnts.p--;cnts.n++;
+    $('cnt-p').textContent=cnts.p;$('cnt-n').textContent=cnts.n;
+    $(`dot-${id}`).className='s-dot';}
+  load(id);
+}
+
+window.addEventListener('DOMContentLoaded',()=>load('SC01'));
+</script>
+</body>
+</html>
