@@ -523,6 +523,70 @@ SC10:{title:'Error: <em>REP sobre PUE</em> (negativo)',
     {id:'V3',label:'Factura A-1010 permanece intacta',exp:'Vigente',field:'Integridad',note:'El intento fallido no altera el CFDI.'},
     {id:'V4',label:'Log de auditoría registrado',exp:'Audit trail ok',field:'Compliance',note:'Trazabilidad del rechazo.'},
   ],neg:true},
+
+SC11:{title:'Cancelación <em>anticipo NO aplicado</em> — motivo 03',
+  desc:'Anticipo cobrado pero todavía no facturado en forma definitiva. Se solicita cancelación en portal SAT con motivo 03 (operación no realizada) y se obtiene aceptación del receptor dentro del plazo.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General PM'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'ANT-002',desc:'CFDI de anticipo 40% — proyecto ingeniería',
+      date:'20-Feb-2026',method:'PUE',forma:'03 - Transferencia',
+      subtotal:80000,iva:12800,ret:0,total:92800,relacion:null,error:null,
+      conceptos:[{d:'Anticipo 40% Proy. Ingeniería',cp:'84111506',u:'ACT',q:1,p:80000,imp:80000,iva:12800}]},
+    {id:'D2',type:'X',folio:'ANT-002 (CANCELADO)',desc:'Solicitud y aceptación de cancelación SAT',
+      date:'25-Feb-2026',method:null,forma:null,
+      subtotal:80000,iva:12800,ret:0,total:92800,
+      relacion:{tipo:'03 - Operación no realizada',ref:'ANT-002'},
+      error:'CFDI de anticipo cancelado en SAT con motivo 03. Receptor aceptó vía buzón dentro de 72 horas hábiles.',
+      conceptos:[]},
+  ],
+  validations:[
+    {id:'V1',label:'Anticipo NO ha sido globalizado en factura final',exp:'Sin factura relacionada',field:'Verificación CFDI relacionados',note:'Antes de cancelar se confirma que ANT-002 no está ligado a una factura definitiva.'},
+    {id:'V2',label:'Motivo cancelación = 03 (operación no realizada)',exp:'03',field:'MotivoCancelacion',note:'Se utiliza cuando se devuelve el anticipo y la operación no se concreta.'},
+    {id:'V3',label:'Requiere aceptación del receptor vía buzón',exp:'Aceptado',field:'Estatus solicitud',note:'El receptor tiene 72 horas hábiles para aceptar o rechazar; si no responde, se tiene por aceptada (salvo casos especiales).'},
+    {id:'V4',label:'Plazo de cancelación dentro del ejercicio/declaración anual',exp:'En tiempo',field:'Plazo art. 29-A CFF',note:'La cancelación se hace antes del mes de la declaración anual ISR correspondiente; de lo contrario hay multas.'},
+    {id:'V5',label:'Si ANT-002 ya se declaró en IVA/ISR → requiere complementaria',exp:'Complementaria presentada',field:'Declaraciones',note:'La devolución del anticipo implica ajustar ingresos e IVA en declaraciones previas.'},
+    {id:'V6',label:'Monto bajo (< $1,000) podría exceptuar aceptación',exp:'Ver RMF 2.7.1.35',field:'Umbrales aceptación',note:'En montos pequeños ciertas cancelaciones no requieren aceptación, pero debe verificarse la regla vigente.'},
+  ],neg:false},
+
+SC12:{title:'Anticipo <em>aplicado</em> en factura final — alternativa con NC',
+  desc:'El anticipo ANT-001 ya fue aplicado/“globalizado” en la factura definitiva. No procede cancelarlo directamente; en su lugar se emite una Nota de Crédito (CFDI Egreso) al 100% del anticipo para revertir su efecto fiscal.',
+  emisor:{rfc:'MAG991231B28',razon:'Manufactura del Golfo SA de CV',reg:'601 - General PM'},
+  receptor:{rfc:'INM850312KT4',razon:'Industrias del Norte y Mar SA de CV',uso:'G03 - Gastos en general',cp:'20000'},
+  docs:[
+    {id:'D1',type:'I',folio:'ANT-001',desc:'CFDI de anticipo 30% — proyecto expansión',
+      date:'10-Feb-2026',method:'PUE',forma:'03 - Transferencia',
+      subtotal:60000,iva:9600,ret:0,total:69600,relacion:null,error:null,
+      conceptos:[{d:'Anticipo 30% Proy. Expansión',cp:'84111506',u:'ACT',q:1,p:60000,imp:60000,iva:9600}]},
+    {id:'D2',type:'I',folio:'C-0050',desc:'Factura definitiva del proyecto (ya globaliza ANT-001)',
+      date:'05-Mar-2026',method:'PPD',forma:'99 - Por definir',
+      subtotal:200000,iva:32000,ret:0,total:232000,relacion:null,error:null,
+      conceptos:[{d:'Desarrollo e instalación Proy. Expansión',cp:'81112105',u:'E48',q:1,p:200000,imp:200000,iva:32000}]},
+    {id:'D3',type:'E',folio:'EGR-001',desc:'CFDI Egreso por aplicación de anticipo',
+      date:'05-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+      subtotal:60000,iva:9600,ret:0,total:69600,
+      relacion:{tipo:'07 - CFDI por aplicación de anticipos',ref:'ANT-001'},error:null,
+      conceptos:[{d:'Aplicación anticipo 30%',cp:'84111506',u:'ACT',q:1,p:60000,imp:60000,iva:9600}]},
+    {id:'D4',type:'X',folio:'CAN-ANT-ERR',desc:'Intento de cancelar ANT-001 directamente',
+      date:'10-Mar-2026',method:null,forma:null,
+      subtotal:60000,iva:9600,ret:0,total:69600,
+      relacion:{tipo:'03 - Operación no realizada (SOLICITADA)',ref:'ANT-001'},
+      error:'ERROR: El CFDI de anticipo ya fue aplicado en factura definitiva/egreso relacionado. No procede cancelación directa según criterios del SAT.',
+      conceptos:[]},
+    {id:'D5',type:'E',folio:'NC-ANT-100',desc:'Nota de Crédito 100% anticipo devuelto',
+      date:'12-Mar-2026',method:'PUE',forma:'03 - Transferencia',
+      subtotal:60000,iva:9600,ret:0,total:69600,
+      relacion:{tipo:'01 - Nota de crédito por devolución/descuento',ref:'ANT-001'},error:null,
+      conceptos:[{d:'Devolución total anticipo ANT-001',cp:'84111506',u:'ACT',q:1,p:60000,imp:60000,iva:9600}]},
+  ],
+  validations:[
+    {id:'V1',label:'ANT-001 ya se encuentra aplicado en C-0050/EGR-001',exp:'Relacionado',field:'CfdiRelacionados',note:'Se verifica que el anticipo esté vinculado a factura definitiva y/o egreso de aplicación.'},
+    {id:'V2',label:'Portal/SAT rechaza cancelación directa de ANT-001',exp:'Rechazado',field:'Respuesta SAT',note:'La cancelación directa generaría discrepancias entre emisor y receptor; se debe usar egreso.'},
+    {id:'V3',label:'Se emite CFDI Egreso (NC-ANT-100) por 100% del anticipo',exp:'$69,600',field:'Total NC',note:'La nota de crédito neutraliza completamente el ingreso del anticipo (base + IVA).'},
+    {id:'V4',label:'TipoRelacion NC-ANT-100 = 01 respecto a ANT-001',exp:'01',field:'TipoRelacion NC',note:'Se usa relación de Nota de Crédito contra el CFDI de anticipo, no contra la factura final.'},
+    {id:'V5',label:'De ser necesario se presentan complementarias de IVA/ISR',exp:'Complementarias',field:'Ajustes fiscales',note:'La reversa del anticipo puede requerir corregir ingresos declarados y el IVA trasladado.'},
+    {id:'V6',label:'Coordinación con receptor para ajustar su contabilidad',exp:'Acuerdo documentado',field:'Comunicación cliente',note:'Se documenta la devolución/NC para que el receptor ajuste su deducción e IVA acreditable.'},
+  ],neg:false},
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -781,7 +845,7 @@ RC08:{title:'Recepción factura <em>UUID duplicado</em> — Rechazo',
 let curTab = 'emit';
 let curSc = null;
 const doneE = {}, doneR = {};
-const cntsE = {p:0,n:10}, cntsR = {p:0,f:0,n:8};
+const cntsE = {p:0,n:12}, cntsR = {p:0,f:0,n:8};
 const emitUuids = {};
 
 // ─────────────────────────────────────────────────────────────────────────
